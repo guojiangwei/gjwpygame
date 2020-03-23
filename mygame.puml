@@ -1,0 +1,43 @@
+@startuml classdiagram
+class mygame
+class settings{
+    config_file
+    setting_dict
+    + save_config()
+    + load_config()
+}
+namespace mygame_gui_lib{
+class AbstractPanel{
+    image
+    text
+    x
+    y
+    height
+    width
+    back_ground_color
+    text_color
+ 
+    +set_image()
+    +set_text()
+    +draw()
+    +click_event()
+}
+class Panel{
+    elements[]
+    + add()
+    + draw()
+}
+class Button{
+
+}
+AbstractPanel <|-- Button
+AbstractPanel <|-- Panel 
+}
+
+
+@enduml classdiagram
+
+@startuml a
+Bob --> Alice
+class AA
+@enduml a

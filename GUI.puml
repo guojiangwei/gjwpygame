@@ -1,0 +1,30 @@
+@startsalt
+{+
+    
+    {/sweeper|look   }[exit]
+    
+        {+
+        .
+        .
+        .
+        .
+        [play               ]
+        .
+        .
+        .
+        .
+        } |
+        {+
+        .
+        .
+        [level]
+        [highscore]
+        [currscore]
+        .
+        .
+        .
+        }
+    
+    
+}
+@endsalt

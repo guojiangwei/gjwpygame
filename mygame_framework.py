@@ -2,6 +2,7 @@ import threading
 import time
 from mygame_gui_lib import Panel
 from mygame_gui_lib import Button
+# from mygame_gui_lib import GifGenerator
 from settings import Settings
 # 每个游戏点主要入口类都要实现自己点相关方法 并调用父类相关方法
 class AbstractGame(object):
@@ -13,11 +14,23 @@ class AbstractGame(object):
         self.main_window = main_game_window.main_window
         self.running = False
 
+
+# 子类中必须初始化以下变量
         self.sb = None
         self.game_panel = None
         self.game_result = None
+        self.game_name = ''
+        
         
     
+    # def set_gif(self, active):
+    #     self.game_panel.set_gif(active)
+    # def get_gif(self):
+    #     return self.game_panel.get_gif()
+
+    # def save_gif(self):
+    #     self.game_panel.save_gif(self.game_name)
+
     def get_refresh_rate(self):
         return Settings.REFRESH_RATE
 
@@ -41,7 +54,7 @@ class AbstractGame(object):
 # 开始游戏
     def start_game(self):
         self.reset_game()
-        self.game_panel.running = True
+        self.game_panel.start_panel()
         self.running = True
         t = threading.Thread(target= self.timer)
         t.start()
@@ -71,26 +84,48 @@ class AbstractGame(object):
     def get_game_panel(self):
         return self.main_window.get_main()
 
+
 # 每个游戏点主主界面必须继承这个类，并重载重置游戏/游戏结束/计算分数等方法
 class AbstractGamePanel(Panel):
     def __init__(self,main_game,width = 10, height =10, level=1):
+        super().__init__(x=5, y=5, height=height,width=width)
         self.score = 0
         self.running = False
         self.main_game = main_game
-        super().__init__(x=5, y=5, height=height,width=width)
-        self.reset_game()
+        self.active_gif = False
+        # self.gif_frame_rate = 10
+        # self.gif_frame_count = 0
+        
+        
+        # self.reset_game()
     
+    def get_surface(self):
+        if self.active_gif:
+            self.generate_frame()
+        return super().get_surface()
+    def start_panel(self):
+        self.running = True
     def reset_game(self):
         # self.reset()
+        # self.active_gif = False
         self.running = False
 
     def gameover(self, status):
         self.running = False
+        # self.active_gif = False
         self.main_game.stop_game(status)
 
     def set_score(self,score):
         self.score = score
         self.main_game.set_score(score)
+    
+    # def set_gif(self, active):
+    #     self.active_gif = active
+    #     # self.game_panel.set_gif(active)
+    # def get_gif(self):
+    #     return self.active_gif
+    # def save_gif(self,path):
+    #     self.gif_gen.save(path)
 
 # implement scoreboard
 class AbstractScoreBoard:
@@ -103,6 +138,7 @@ class AbstractScoreBoard:
         
         ym = self.center_y
         xm = self.center_x
+
         
         #预留40像素放其他点组件
         self.height = 40
@@ -110,6 +146,9 @@ class AbstractScoreBoard:
         self.items = []
 
         # 
+        # self.gif_button = Button(x=xm//2, y=self.height , width= xm, height= self.height ,background_color=self.color, text='GIF')
+        # self.add(self.gif_button)
+
         ym = ym + self.height
         for i in range(3):
             tmp_button1 = Button(x=2, y=ym + self.height * i, width= xm, height= self.height ,background_color=self.color)
@@ -127,13 +166,14 @@ class AbstractScoreBoard:
     def init(self):
         pass
     def reset(self):
-        self.items[1][1].set_text(str(0))
+        # self.items[1][1].set_text(str(0))
         self.items[2][1].set_text(str(0))
         self.init()
 
     def add(self, item):
         self.panel.add(item)
     
+    # setting scoreboard state
     def set_active(self, value):
         for item in self.items:
             item[0].set_visible(value)
@@ -153,6 +193,16 @@ class AbstractScoreBoard:
 
     def set_high_score(self, high):
         self.set_item_value(0,str(score))
+    
+    def set_item_color(self, color, index):
+        self.items[index][0].set_bgcolor(color)
+        self.items[index][1].set_bgcolor(color)
+
+# 判断分数版面是否可以响应鼠标点击事件
+    def can_response(self, pos):
+        return self.panel.can_response(pos)
+
+
 
 # 游戏成功或者失败点效果类
 class GameResult(Panel):
@@ -194,22 +244,28 @@ class GameResult(Panel):
                 elem.set_visible(value)
 
 
-    def blit_elems(self):   
-        self.surface.fill(self._background_color)     
-        # print(self.elements)
-        for i in range(len(self.elements)):
-            if self.elements[i].get_visible():
-                sur, rect = self.elements[i].get_surface()
-                if i == 0:
-                    self.elements[i].fade_in()
-                self.surface.blit(sur, rect)
+    # def blit_elems(self):   
+    #     self.surface.fill(self._background_color)     
+    #     # print(self.elements)
+    #     for i in range(len(self.elements)):
+    #         if self.elements[i].get_visible():
+    #             sur, rect = self.elements[i].get_surface()
+    #             if i == 0:
+    #                 self.elements[i].fade_in()
+    #             self.surface.blit(sur, rect)
 
     def can_response(self, point):
         return self.elements[1].can_response(point)
+    
+    ### status=0 game success !
+    #  status=1 game failed!  
+    # status=2 pause game
+    ###
     def set_status(self, status):
         print("game status:",status)
         self.set_visible(True)
         self.elements[0].set_visible(True)
+        self.elements[0].set_is_fade_in(True)
         if status == 0:
             self.elements[0].set_text(self.status_msg[0])
             self.elements[1].set_text(self.button_text[0])

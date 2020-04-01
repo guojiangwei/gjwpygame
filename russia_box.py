@@ -14,6 +14,7 @@ class MainRussiaBox(AbstractGame):
         self.box_size = 25
         self.game_panel = RussiaBox(self)
         self.sb = ScoreBoard(self)
+        self.game_name = 'RussiaBox'
         self.main_window.add_main(self.game_panel)
         
         main_game.main_window.register_key_down(self.game_panel)
@@ -63,10 +64,11 @@ class RussiaBox(AbstractGamePanel):
         self.refresh_time = 0
 
         super(RussiaBox,self).__init__( main_game=main_russia_box,height=main_russia_box.box_size * self._max_rows + 2,width=main_russia_box.box_size * self._max_cols + 2)
+        self.init_graph_grid()
 
         
     def init_graph_grid(self):
-        self.box_status = [  [ 0 for _ in range(self._max_cols)] for _ in range(self._max_rows) ]
+        
         self.graph_boxes = [  [] for _ in range(self._max_rows) ]
         for i in range(self._max_rows):
             for j in range(self._max_cols):
@@ -80,7 +82,8 @@ class RussiaBox(AbstractGamePanel):
     def reset_game(self):
         super().reset_game()
         print("reset russia box")
-        self.init_graph_grid()
+        
+        self.box_status = [  [ 0 for _ in range(self._max_cols)] for _ in range(self._max_rows) ]
         self.current_shape = self.generate_box_shape()
         self.next_shape = self.generate_box_shape()
 
@@ -182,14 +185,19 @@ class RussiaBox(AbstractGamePanel):
 
     
     def response_key_down(self, key):
-        if key == pygame.K_LEFT:
-            self.shape_translation(-1)
-        elif key == pygame.K_RIGHT:
-            self.shape_translation(1)
-        elif key == pygame.K_DOWN:
-            pass
-        elif key == pygame.K_UP:
-            self.shape_rotate()
+        if self.running:
+            if key == pygame.K_LEFT:
+                self.shape_translation(-1)
+                return True
+            elif key == pygame.K_RIGHT:
+                self.shape_translation(1)
+                return True
+            elif key == pygame.K_DOWN:
+                pass
+            elif key == pygame.K_UP:
+                self.shape_rotate()
+                return True
+        return False
     def shape_rotate(self):
         def can_rotate():
             for p in self.current_shape.shapes:

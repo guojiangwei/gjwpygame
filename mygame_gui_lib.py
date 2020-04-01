@@ -1,6 +1,8 @@
 import pygame
 import pygame.font
 import math
+from PIL import Image
+# 图形界面组件点顶层类
 class AbstractPanel:
     def __init__(self,x = 0,y = 0, height = 10, width = 10, image = '', text = '', text_color = (0, 0, 0), background_color = (255, 255, 255)):
         self._x = int(x)
@@ -13,6 +15,8 @@ class AbstractPanel:
         self._background_color = background_color
         self._height = int(height)
         self._width = int(width)
+        self.image_surface = None
+        self.text_surface = None
 
         self._text = text
         self._text_color = text_color
@@ -24,6 +28,8 @@ class AbstractPanel:
         self._visible = True
         self.alpha = 255
         self.alpha_step = 2
+        self.is_fade_in = False
+
         self._border_color =tuple( abs(c - 20) for c in background_color  ) 
         
         sur = pygame.Surface((self._width,self._height))
@@ -33,12 +39,16 @@ class AbstractPanel:
         self.reset()
     
     def reset(self):
-        self.alpha = 255
-        self.surface.set_alpha(self.alpha)
         self.surface.fill(self._background_color)
+        
+        
+        # self.surface.set_alpha(self.alpha)
+        
         self._set_rect()
         self._set_content()
         self.draw_border()
+        if self.is_fade_in:
+            self.fade_in()
         self._changed = False
     
     # 设置绝对坐标系
@@ -46,6 +56,12 @@ class AbstractPanel:
         self.abs_x = p_x 
         self.abs_y = p_y 
 
+# 
+    def set_is_fade_in(self, value):
+        if not value:
+            self.alpha = 255
+        self.is_fade_in = value
+        self._changed = True
     def set_bgcolor(self, color):
         self._background_color = color
         self._changed = True
@@ -60,17 +76,22 @@ class AbstractPanel:
         
     def _process_text(self):
         self._font = pygame.font.SysFont(pygame.font.get_fonts()[3], self._text_size)
-        text_surface = self._font.render(self._text, True, self._text_color, self._background_color)
-        rect = text_surface.get_rect()
+        self.text_surface = self._font.render(self._text, True, self._text_color, self._background_color).convert()
+        rect = self.text_surface.get_rect()
         rect.top = (self._height - rect.height)/2
         rect.left = (self._width - rect.width) / 2
+        if self.is_fade_in:
+            self.text_surface.set_alpha(self.alpha)
         
-        self.surface.blit(text_surface, rect)
+        self.surface.blit(self.text_surface, rect)
         # self._set_rect()
         # print(self._text)
     def _process_image(self):
-        image_surface = pygame.transform.smoothscale(pygame.image.load(self._image), (self._height, self._width))
-        self.surface.blit(image_surface, image_surface.get_rect())
+        self.image_surface = pygame.transform.smoothscale(pygame.image.load(self._image), (self._height, self._width)).convert()
+        if self.is_fade_in:
+            self.image_surface.set_alpha(self.alpha)
+
+        self.surface.blit(self.image_surface, self.image_surface.get_rect())
     def set_visible(self, status):
         # if not status:
         self._visible = status
@@ -150,6 +171,8 @@ class AbstractPanel:
     def get_surface(self):
         if self._changed:
             self.reset()
+        if self.is_fade_in :
+            self._changed = True
         
         return self.surface, self.rect
 
@@ -168,7 +191,13 @@ class AbstractPanel:
 
 # 按钮渐入渐出效果
     def fade_in(self):
-        self.surface.set_alpha(self.alpha)
+        if self.image_surface is not None:
+            surface = self.image_surface
+        elif self.text_surface is not None:
+            surface = self.text_surface
+
+        surface.set_alpha(self.alpha)
+        # print('alpha:', self.alpha)
         self.alpha += self.alpha_step
         if self.alpha >= 255:
             self.alpha = 255
@@ -178,7 +207,7 @@ class AbstractPanel:
             self.alpha_step = -self.alpha_step
         
 
-
+# 图像界面容器类
 class Panel(AbstractPanel):
     def __init__(self, x = 0,y = 0, height = 10, width = 10, image = '', text = '', text_color = (0, 0, 0), background_color = (255, 255, 255)):
         super(Panel, self).__init__(x = x, y = y, height = height, width = width, image = image, text = text, text_color = text_color, background_color = background_color)
@@ -229,7 +258,7 @@ class Panel(AbstractPanel):
                 sur, rect = elem.get_surface()
                 self.surface.blit(sur, rect)
 
-
+# 图像界面按钮类
 class Button(AbstractPanel):
     def __init__(self,x = 0,y = 0, height = 30, width = 60, image = '', text = '', text_color = (0, 0, 0), background_color = (255, 255, 255)):
         super(Button, self).__init__(x = x, y = y, height = height, width = width, image = image, text = text, text_color = text_color, background_color = background_color)
@@ -266,7 +295,7 @@ class Button(AbstractPanel):
         self._image = path
         self._changed = True
         self._set_content()
-    
+    # 单选框组件
 class OptionButton(Panel):
     def __init__(self, values ,x = 0,y = 0, height = 30, width = 60, text_color = (0, 0, 0), background_color = (255, 255, 255)):
         super(OptionButton, self).__init__(x = x, y = y, height = height, width = width, text_color = text_color, background_color = background_color)
@@ -331,6 +360,41 @@ class OptionButton(Panel):
                 return True
         return False
 
+# # 文本框组件
+# class TextBox(Button):
+#     def __init__(self,x = 0,y = 0, height = 10, width = 10, image = '', text = '', text_color = (0, 0, 0), background_color = (255, 255, 255)): 
+#         super(TextBox, self).__init__(x = x, y = y, height = height, width = width, text_color = text_color, background_color = background_color)
+    
+#     def response_key_down(self,key):
 
     
 
+# 生成GIF 类
+class GifGenerator(object):
+    def __init__(self, surface, frequency = 1):
+        self.frame_rate = frequency
+        self.images = []
+        self.count = 0
+        self.surface = surface
+
+    def set_frame_rate(self, rate):
+        self.frame_rate = rate
+
+    def generate_frame(self):
+        self.count += 1
+         
+        if self.count == self.frame_rate :
+            self.count = 0
+            array = pygame.surfarray.array3d(self.surface)
+
+            image = Image.fromarray(array.swapaxes(0,1))
+            self.images.append(image)
+
+    def save(self,path=''):
+        print('path:',path)
+        if path == '':
+            # Image.
+            self.images[0].save("test.gif", save_all = True, append_images = self.images[1:], duration= [500]*(len(self.images)))
+        else:
+            print('save gif images size:', len(self.images))
+            self.images[0].save(path,'GIF' ,save_all = True, append_images = self.images[1:], duration= [300]*len(self.images))

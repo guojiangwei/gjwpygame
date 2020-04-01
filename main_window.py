@@ -1,7 +1,11 @@
 import pygame
 from mygame_gui_lib import Panel
 from mygame_gui_lib import Button
+from mygame_gui_lib import GifGenerator
 import sys
+# 游戏主界面
+# 封装了对各种事件的响应
+# 系统的图像界面入口
 class MainWindow:
     def __init__(self):
         # pygame.init()
@@ -16,6 +20,17 @@ class MainWindow:
         self.mouse_down_listener = []
         self.key_down_listener = []
         self.sys_exit_listener = []
+
+        # to generate gif 
+        self.gif_gen = GifGenerator(self.screen, 100)
+        self.gif_active = False
+    
+    def set_gif_active(self, active):
+        self.gif_active = active
+    def get_gif_active(self):
+        return self.gif_active 
+    def save_gif(self, path):
+        self.gif_gen.save(path)
         
 
     def set_default_layout(self):
@@ -43,6 +58,8 @@ class MainWindow:
 
         while True:
             # self.show_window()
+            if self.gif_active:
+                self.gif_gen.generate_frame()
             self.start_listen_event()
             for elem in self.elements:
                 if elem.get_visible():
@@ -74,7 +91,8 @@ class MainWindow:
     # response mouse down event
     def _process_key_down(self,key):
         for elem in self.key_down_listener:
-            elem.response_key_down(key)
+            if elem.response_key_down(key):
+                return 
                 
 
 
@@ -96,3 +114,4 @@ class MainWindow:
                 self._process_mouse_down(pygame.mouse.get_pos())
             elif event.type == pygame.KEYDOWN:
                 self._process_key_down(event.key)
+

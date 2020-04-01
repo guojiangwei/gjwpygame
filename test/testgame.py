@@ -126,11 +126,12 @@ if __name__ == "__main__":
     boxes = RussianBox(surface2)
     # ss = draw_surface(surface2)
     tif = TifGenerator(surface2,2)
+    surface.fill(colors,surface.get_rect())
     
     
     while True:
         
-        surface.fill(colors,surface.get_rect())
+        
         pygame.draw.rect(surface2,(255, 0, 230),((0,0),(80,80)),1)
         # surface.blit(surface, rect)
         

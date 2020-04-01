@@ -15,6 +15,7 @@ class MainSweeper(AbstractGame):
         self.game_panel = MineSweeper(self)
         self.main_window.add_main(self.game_panel)
         self.sb = ScoreBoard(self)
+        self.game_name = 'sweeper'
         self.main_window.register_mouse_down(self.game_panel)
         self.main_window.register_mouse_down(self.sb)
         
@@ -84,6 +85,7 @@ class MineSweeper(AbstractGamePanel):
         self.init_level(level)
         
         super(MineSweeper,self).__init__(main_game=main_sweeper, height=parent_window.get_height()-10,width=parent_window.get_width()-10)
+        self.reset_game()
         # status: 0 initial, 1 failed, 2 success, 3,playing
         # 初始化表格图像 和 表格控件，表格控件就是按钮
     def init_graph_grid(self):
@@ -274,12 +276,12 @@ class ScoreBoard(AbstractScoreBoard):
         self.set_item_value(1,str(num))
 
     def  response_mouse_down(self,pos , mouse_index = 0):
-        if not self.main_game.running:
+        if not self.level_label.can_response(pos):
             result = self.level_label.response_mouse_down(pos, mouse_index)
             if result :
                 self.main_game.set_level(self.get_level())
             return result
     
-    def can_response(self, pos):
-        return self.level_label.can_response(pos)
+    # def can_response(self, pos):
+    #     return self.level_label.can_response(pos)
         
